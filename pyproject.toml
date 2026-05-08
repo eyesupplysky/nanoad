@@ -26,10 +26,14 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+viz = [
+    "graphviz>=0.20",
+]
 dev = [
     "pytest>=8.0",
     "ruff>=0.6",
     "mypy>=1.11",
+    "graphviz>=0.20",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -55,3 +59,7 @@ python_version = "3.12"
 strict = true
 mypy_path = "src"
 files = ["src"]
+
+[[tool.mypy.overrides]]
+module = "graphviz"
+ignore_missing_imports = true

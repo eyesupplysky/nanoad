@@ -4,11 +4,13 @@ from nanoad.ops.activations import relu, tanh
 from nanoad.ops.arithmetic import add, div, mul, power, sub
 from nanoad.ops.linalg import matmul, reshape, transpose
 from nanoad.ops.reductions import mean, sum
+from nanoad.ops.softmax import cross_entropy, softmax
 from nanoad.tensor import Tensor
 
 __all__ = [
     "Tensor",
     "add",
+    "cross_entropy",
     "div",
     "matmul",
     "mean",
@@ -16,6 +18,7 @@ __all__ = [
     "power",
     "relu",
     "reshape",
+    "softmax",
     "sub",
     "sum",
     "tanh",
