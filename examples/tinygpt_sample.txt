@@ -1,0 +1,21 @@
+# Tiny-GPT generation sample
+#
+# Source: examples/train_tinygpt.py @ commit a38b910 (M10)
+# Config: 4 layers x 4 heads x 64 dim, block_size=32, 209,473 parameters
+# Training: 2000 AdamW iters, batch_size=32, lr 3e-4 -> 3e-5 cosine, grad_clip=1.0
+# Wall-clock: 2500s (~42 min) on CPU, pure NumPy
+# Final loss: train 2.1997, val 2.2744 (perplexity ~9.7)
+# Sampling: temperature=0.8, top_k=20, seed prompt "ROMEO:", 400 new tokens
+
+ROMEO:
+Yat wich four sumove, the heat bet to tho whe thak
+Thar come thake hart
+There de solecheshgo netlaing oimeds te houe me be so ingheand
+And my nof sthere to thee has ton mawar dund.
+
+MHary iss gerit the wath theanoug fere ilige buth mows tousse
+Iry too slitos to shindst;
+The amou be leagking letealem ade wold
+The iris, lous mutat mal tho sor to pe soondagt.
+
+An wo thas im that woul shaghe of he an

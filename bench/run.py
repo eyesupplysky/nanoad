@@ -13,6 +13,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from nanoad import Tensor
+from nanoad.nn import GPT, LayerNorm, MultiHeadAttention
 from nanoad.ops.activations import relu, tanh
 from nanoad.ops.arithmetic import add, div, mul, power, sub
 from nanoad.ops.conv import conv2d
@@ -226,6 +227,67 @@ def build_cases(rng: np.random.Generator) -> list[BenchCase]:
             shape_label=f"{pool_x} kernel=2",
             make_inputs=lambda: (_rand_tensor(pool_x, rng),),
             apply=lambda x: max_pool2d(x, kernel=2),
+        ),
+        *_transformer_cases(rng),
+    ]
+
+
+def _transformer_cases(rng: np.random.Generator) -> list[BenchCase]:
+    """Bench cases for the M9/M10 transformer stack: layer norm, causal MHA, full GPT step."""
+    ln_shape = (32, 32, 64)
+    ln = LayerNorm(num_features=64)
+
+    mha_shape = (32, 32, 64)
+    mha = MultiHeadAttention(embed_dim=64, num_heads=4, causal=True)
+
+    gpt_vocab = 64
+    gpt_block = 16
+    gpt_batch = 8
+    gpt = GPT(
+        vocab_size=gpt_vocab,
+        embed_dim=32,
+        num_heads=2,
+        num_layers=2,
+        block_size=gpt_block,
+    )
+
+    def _ln_inputs() -> tuple[Tensor]:
+        ln.zero_grad()
+        return (_rand_tensor(ln_shape, rng),)
+
+    def _mha_inputs() -> tuple[Tensor]:
+        mha.zero_grad()
+        return (_rand_tensor(mha_shape, rng),)
+
+    def _gpt_inputs() -> tuple[NDArray[np.int64], NDArray[np.int64]]:
+        gpt.zero_grad()
+        x = rng.integers(0, gpt_vocab, size=(gpt_batch, gpt_block), dtype=np.int64)
+        y = rng.integers(0, gpt_vocab, size=(gpt_batch * gpt_block,), dtype=np.int64)
+        return x, y
+
+    def _gpt_apply(x: NDArray[np.int64], y: NDArray[np.int64]) -> Tensor:
+        logits = gpt(x)
+        b, t, v = logits.shape
+        return cross_entropy(logits.reshape(b * t, v), y)
+
+    return [
+        BenchCase(
+            name="layer_norm",
+            shape_label=f"{ln_shape} last-axis",
+            make_inputs=_ln_inputs,
+            apply=lambda x: ln(x),
+        ),
+        BenchCase(
+            name="mha_causal",
+            shape_label=f"{mha_shape} heads=4",
+            make_inputs=_mha_inputs,
+            apply=lambda x: mha(x),
+        ),
+        BenchCase(
+            name="gpt_step",
+            shape_label=f"2L x 2H x 32D, B={gpt_batch} T={gpt_block} V={gpt_vocab}",
+            make_inputs=_gpt_inputs,
+            apply=_gpt_apply,
         ),
     ]
 

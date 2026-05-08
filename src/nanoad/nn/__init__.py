@@ -1,11 +1,12 @@
 """Neural network layers and loss modules."""
 
-from nanoad.nn.activations import ReLU, Tanh
+from nanoad.nn.activations import GELU, ReLU, Tanh
 from nanoad.nn.attention import MultiHeadAttention
 from nanoad.nn.batchnorm import BatchNorm2d
 from nanoad.nn.conv import Conv2d
 from nanoad.nn.embedding import Embedding
 from nanoad.nn.flatten import Flatten
+from nanoad.nn.gpt import GPT
 from nanoad.nn.layernorm import LayerNorm
 from nanoad.nn.linear import Linear
 from nanoad.nn.loss import CrossEntropy
@@ -19,6 +20,8 @@ __all__ = [
     "CrossEntropy",
     "Embedding",
     "Flatten",
+    "GELU",
+    "GPT",
     "LayerNorm",
     "Linear",
     "MaxPool2d",
