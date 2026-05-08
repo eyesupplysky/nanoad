@@ -7,11 +7,14 @@ from nanoad.ops.reductions import mean, sum
 from nanoad.ops.softmax import cross_entropy, softmax
 from nanoad.tensor import Tensor
 
+from nanoad import functional
+
 __all__ = [
     "Tensor",
     "add",
     "cross_entropy",
     "div",
+    "functional",
     "matmul",
     "mean",
     "mul",
