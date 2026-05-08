@@ -1,29 +1,46 @@
-"""Tensor class and reverse-mode autograd engine."""
+"""Tensor class and tape-aware reverse-mode autograd engine.
+
+A Tensor wraps a float64 NumPy array. Forward ops record the result Tensor's parents in
+``_prev`` and tag it with an ``_op`` registry key (and optional ``_fwd_ctx`` for non-Tensor
+state). ``backward`` walks the forward tape in reverse-topological order, dispatches each
+op's registered VJP, and accumulates parent gradients via the public arithmetic ops — so
+``Tensor.grad`` is itself a Tensor whose own ``_prev`` traces *how* it was computed,
+enabling higher-order autograd.
+"""
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from typing import Any
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
+from nanoad._engine import get_vjp
+
 
 class Tensor:
-    """N-d array participating in a reverse-mode autograd graph; backed by float64 numpy."""
+    """N-d array participating in a reverse-mode autograd graph; backed by float64 numpy.
 
-    __slots__ = ("_backward", "_op", "_prev", "data", "grad")
+    Two graphs share these Tensors. The *forward graph* is built by user code and is reachable
+    via ``_prev``; the *gradient graph* is built by ``backward()`` and is reachable via the
+    ``_prev`` of each gradient Tensor stored in ``.grad``. Calling ``backward`` on a function
+    of someone's ``.grad`` walks the gradient graph and yields second-order gradients.
+    """
+
+    __slots__ = ("_fwd_ctx", "_op", "_prev", "data", "grad")
 
     def __init__(
         self,
         data: ArrayLike,
         _prev: tuple[Tensor, ...] = (),
         _op: str = "",
+        _fwd_ctx: dict[str, Any] | None = None,
     ) -> None:
         self.data: NDArray[np.float64] = np.array(data, dtype=np.float64)
-        self.grad: NDArray[np.float64] = np.zeros_like(self.data)
+        self.grad: Tensor | None = None
         self._prev: tuple[Tensor, ...] = _prev
-        self._backward: Callable[[], None] = _noop_backward
         self._op: str = _op
+        self._fwd_ctx: dict[str, Any] | None = _fwd_ctx
 
     @property
     def shape(self) -> tuple[int, ...]:
@@ -36,20 +53,45 @@ class Tensor:
         return self.data.ndim
 
     def backward(self) -> None:
-        """Populate .grad on every reachable node via reverse-mode autodiff."""
+        """Build the gradient graph by walking the forward tape in reverse-topological order.
+
+        Resets intermediate gradients so consecutive (higher-order) backward calls do not
+        pollute each other, then seeds ``self.grad`` with ones and dispatches each non-leaf
+        node's registered VJP. Parent contributions accumulate through the public ``+`` op,
+        so the resulting gradient graph is itself a differentiable Tensor DAG.
+        Leaf gradients are *not* reset — they accumulate across backwards (the training
+        pattern); call ``zero_grad`` on a leaf before a fresh higher-order pass.
+        """
         if self.data.ndim != 0:
             raise RuntimeError(
                 f"backward() requires scalar output; got shape {self.data.shape}. "
                 "Reduce to a scalar (e.g., .sum()) before calling backward()."
             )
         topo = _topological_order(self)
-        self.grad = np.ones_like(self.data)
+        for node in topo:
+            if node._prev:
+                node.grad = None
+        self.grad = Tensor(np.ones_like(self.data))
         for node in reversed(topo):
-            node._backward()
+            if not node._op:
+                continue
+            assert node.grad is not None  # guaranteed by topo-order accumulation
+            vjp = get_vjp(node._op)
+            parent_grads = vjp(node.grad, node._prev, node._fwd_ctx)
+            if len(parent_grads) != len(node._prev):
+                raise RuntimeError(
+                    f"VJP for {node._op!r} returned {len(parent_grads)} grads "
+                    f"but op has {len(node._prev)} parents"
+                )
+            for parent, contribution in zip(node._prev, parent_grads, strict=True):
+                if parent.grad is None:
+                    parent.grad = contribution
+                else:
+                    parent.grad = parent.grad + contribution
 
     def zero_grad(self) -> None:
-        """Reset only this node's gradient. Other nodes are not touched."""
-        self.grad = np.zeros_like(self.data)
+        """Drop this node's gradient; matches PyTorch ``set_to_none=True``."""
+        self.grad = None
 
     def sum(
         self,
@@ -159,10 +201,6 @@ def _coerce(value: ArrayLike | Tensor) -> Tensor:
     if isinstance(value, Tensor):
         return value
     return Tensor(value)
-
-
-def _noop_backward() -> None:
-    """Default _backward for leaf tensors — nothing to propagate to."""
 
 
 def _topological_order(root: Tensor) -> list[Tensor]:

@@ -43,7 +43,7 @@ def test_max_pool2d_argmax_routing_hand_check() -> None:
     out = max_pool2d(x, kernel=2)  # max is at (1,1) -> 4
     out.sum().backward()
     expected = np.array([[[[0.0, 0.0], [0.0, 1.0]]]])
-    np.testing.assert_allclose(x.grad, expected)
+    np.testing.assert_allclose(x.grad.data, expected)
 
 
 def test_max_pool2d_rejects_3d_input() -> None:

@@ -17,7 +17,9 @@ class SGD:
     def step(self) -> None:
         """Update every parameter by one SGD step using its current .grad."""
         for p in self.params:
-            p.data = p.data - self.lr * p.grad
+            if p.grad is None:
+                continue
+            p.data = p.data - self.lr * p.grad.data
 
     def zero_grad(self) -> None:
         """Reset .grad on every managed parameter."""

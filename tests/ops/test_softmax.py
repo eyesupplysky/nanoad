@@ -59,7 +59,7 @@ def test_cross_entropy_grads_match_finite_diffs():
     logits = Tensor(logits_data)
     loss = cross_entropy(logits, targets)
     loss.backward()
-    analytic = logits.grad.copy()
+    analytic = logits.grad.data.copy()
 
     eps = 1e-5
     numeric = np.zeros_like(logits_data)

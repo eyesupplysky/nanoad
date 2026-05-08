@@ -17,7 +17,7 @@ def test_relu_at_zero():
     y = relu(x)
     y.backward()
     assert y.data == 0.0
-    assert x.grad == 0.0
+    assert float(x.grad.data) == 0.0
 
 
 def test_tanh_zero(grad_check):

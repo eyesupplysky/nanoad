@@ -37,10 +37,10 @@ def test_sgd_zero_grad_clears_all_params():
     layer = Linear(2, 3)
     opt = SGD(layer.parameters(), lr=0.1)
     for p in layer.parameters():
-        p.grad = p.grad + 1.0
+        p.grad = Tensor(np.ones_like(p.data))
     opt.zero_grad()
     for p in layer.parameters():
-        assert (p.grad == 0).all()
+        assert p.grad is None
 
 
 def test_sgd_step_uses_lr_correctly():
@@ -49,8 +49,8 @@ def test_sgd_step_uses_lr_correctly():
     layer = Linear(2, 1)
     layer.weight.data = np.array([[0.5], [0.5]])
     layer.bias.data = np.array([0.0])
-    layer.weight.grad = np.array([[1.0], [2.0]])
-    layer.bias.grad = np.array([3.0])
+    layer.weight.grad = Tensor(np.array([[1.0], [2.0]]))
+    layer.bias.grad = Tensor(np.array([3.0]))
 
     opt = SGD(layer.parameters(), lr=0.1)
     opt.step()

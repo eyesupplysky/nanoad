@@ -54,7 +54,7 @@ def test_mlp_with_reshape_and_transpose():
     out = (a.reshape(2, 3, 4).transpose(1, 0, 2).reshape(6, 4) @ w).sum()
     out.backward()
 
-    assert a.grad.shape == (6, 4)
-    assert w.grad.shape == (4, 2)
-    assert not np.allclose(a.grad, 0.0)
-    assert not np.allclose(w.grad, 0.0)
+    assert a.grad.data.shape == (6, 4)
+    assert w.grad.data.shape == (4, 2)
+    assert not np.allclose(a.grad.data, 0.0)
+    assert not np.allclose(w.grad.data, 0.0)

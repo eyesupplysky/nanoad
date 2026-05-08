@@ -28,7 +28,7 @@ def test_draw_includes_op_label_for_addition():
     c = a + b
     g = draw(c)
     src = g.source
-    assert "+" in src
+    assert "add" in src
     assert "shape=oval" in src
 
 

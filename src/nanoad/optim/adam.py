@@ -35,7 +35,9 @@ class Adam:
         b1_correction = 1.0 - self.b1**self.t
         b2_correction = 1.0 - self.b2**self.t
         for i, p in enumerate(self.params):
-            g = p.grad
+            if p.grad is None:
+                continue
+            g = p.grad.data
             self.m[i] = self.b1 * self.m[i] + (1.0 - self.b1) * g
             self.v[i] = self.b2 * self.v[i] + (1.0 - self.b2) * (g * g)
             m_hat = self.m[i] / b1_correction

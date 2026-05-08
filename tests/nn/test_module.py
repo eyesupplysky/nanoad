@@ -54,10 +54,10 @@ def test_parameters_handles_direct_tensor_attr():
 def test_zero_grad_resets_all_parameters():
     m = _Toy()
     for p in m.parameters():
-        p.grad = p.grad + 5.0
+        p.grad = Tensor(np.full(p.data.shape, 5.0))
     m.zero_grad()
     for p in m.parameters():
-        assert (p.grad == 0).all()
+        assert p.grad is None
 
 
 def test_sequential_collects_layer_parameters():

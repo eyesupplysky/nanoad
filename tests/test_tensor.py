@@ -13,9 +13,9 @@ def test_three_node_graph():
     out.backward()
 
     assert out.data == 20.0
-    assert a.grad == 4.0
-    assert b.grad == 4.0
-    assert c.grad == 5.0
+    assert float(a.grad.data) == 4.0
+    assert float(b.grad.data) == 4.0
+    assert float(c.grad.data) == 5.0
 
 
 def test_grad_accumulates_across_paths():
@@ -25,20 +25,23 @@ def test_grad_accumulates_across_paths():
     y.backward()
 
     assert y.data == 9.0
-    assert x.grad == 6.0
+    assert float(x.grad.data) == 6.0
 
 
 def test_zero_grad_resets_local():
-    x = Tensor(1.0)
-    x.grad = 5.0
+    """zero_grad sets .grad to None (matches PyTorch ``set_to_none=True``)."""
+    x = Tensor(3.0)
+    (x * x).backward()
+    assert x.grad is not None
     x.zero_grad()
-    assert x.grad == 0.0
+    assert x.grad is None
 
 
 def test_backward_on_leaf_does_not_explode():
     x = Tensor(7.0)
     x.backward()
-    assert x.grad == 1.0
+    assert x.grad is not None
+    assert float(x.grad.data) == 1.0
 
 
 def test_repr_is_readable():
@@ -76,9 +79,20 @@ def test_backward_rejects_non_scalar_output():
 
 
 def test_backward_after_sum_works_on_vector_input():
+    import numpy as np
+
     x = Tensor([1.0, 2.0, 3.0])
     y = (x * 2.0).sum()
     y.backward()
-    import numpy as np
 
-    assert np.allclose(x.grad, [2.0, 2.0, 2.0])
+    assert np.allclose(x.grad.data, [2.0, 2.0, 2.0])
+
+
+def test_grad_has_provenance_and_is_a_tensor():
+    """After backward(), .grad is a Tensor whose own _prev tracks how it was computed."""
+    x = Tensor(2.0)
+    y = x * x
+    y.backward()
+    assert isinstance(x.grad, Tensor)
+    # x.grad was built by the engine as add(c1, c2), so it has parents.
+    assert x.grad._prev != ()

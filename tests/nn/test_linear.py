@@ -32,10 +32,12 @@ def test_linear_grads_propagate():
     x = Tensor(np.random.randn(4, 3))
     out = layer(x).sum()
     out.backward()
-    assert layer.weight.grad.shape == (3, 2)
-    assert layer.bias.grad.shape == (2,)
-    assert not np.allclose(layer.weight.grad, 0)
-    assert not np.allclose(layer.bias.grad, 0)
+    assert layer.weight.grad is not None
+    assert layer.bias.grad is not None
+    assert layer.weight.grad.data.shape == (3, 2)
+    assert layer.bias.grad.data.shape == (2,)
+    assert not np.allclose(layer.weight.grad.data, 0)
+    assert not np.allclose(layer.bias.grad.data, 0)
 
 
 def test_linear_forward_value():

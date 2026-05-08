@@ -40,7 +40,7 @@ def grad_check() -> Callable[..., None]:
             raise TypeError("fn must return a Tensor")
         scalar = out if out.data.ndim == 0 else out.sum()
         scalar.backward()
-        analytics = [t.grad.copy() for t in tensors]
+        analytics = [t.grad.data.copy() if t.grad is not None else np.zeros_like(t.data) for t in tensors]
 
         for i, x_arr in enumerate(base):
             numeric = np.zeros_like(x_arr)

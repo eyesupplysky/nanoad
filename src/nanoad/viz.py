@@ -64,7 +64,8 @@ def draw(root: Tensor, rankdir: str = "LR") -> graphviz.Digraph:
 
     for t in nodes:
         node_id = str(id(t))
-        label = f"{{ data: {_fmt_value(t.data)} | grad: {_fmt_value(t.grad)} }}"
+        grad_str = _fmt_value(t.grad.data) if t.grad is not None else "None"
+        label = f"{{ data: {_fmt_value(t.data)} | grad: {grad_str} }}"
         dot.node(node_id, label=label, shape="record")
         if t._op:
             op_id = node_id + "_op"

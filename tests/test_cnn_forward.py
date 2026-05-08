@@ -79,4 +79,5 @@ def test_cnn_with_cross_entropy_backward_runs() -> None:
     loss = loss_fn(logits, targets)
     loss.backward()
     for p in model.parameters():
-        assert np.all(np.isfinite(p.grad))
+        assert p.grad is not None
+        assert np.all(np.isfinite(p.grad.data))

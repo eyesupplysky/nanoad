@@ -55,4 +55,5 @@ def test_flatten_grads_propagate() -> None:
     x = Tensor(np.random.randn(2, 3, 4))
     y = layer(x)
     y.sum().backward()
-    np.testing.assert_allclose(x.grad, np.ones_like(x.data))
+    assert x.grad is not None
+    np.testing.assert_allclose(x.grad.data, np.ones_like(x.data))
