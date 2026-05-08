@@ -12,6 +12,7 @@ class Linear(Module):
     """Affine map y = x @ W + b with He-initialized weights."""
 
     def __init__(self, in_features: int, out_features: int) -> None:
+        super().__init__()
         std = float(np.sqrt(2.0 / in_features))
         self.weight = Tensor(np.random.randn(in_features, out_features) * std)
         self.bias = Tensor(np.zeros(out_features))

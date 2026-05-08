@@ -11,6 +11,9 @@ from nanoad.tensor import Tensor
 class Module:
     """Base class for layers and composite networks. Subclasses override forward()."""
 
+    def __init__(self) -> None:
+        self.training: bool = True
+
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         return self.forward(*args, **kwargs)
 
@@ -36,3 +39,26 @@ class Module:
         """Reset .grad on every parameter held directly or transitively."""
         for p in self.parameters():
             p.zero_grad()
+
+    def _modules(self) -> Iterator[Module]:
+        """Yield every direct or transitive child Module (not including self)."""
+        for value in vars(self).values():
+            if isinstance(value, Module):
+                yield value
+                yield from value._modules()
+            elif isinstance(value, list | tuple):
+                for item in value:
+                    if isinstance(item, Module):
+                        yield item
+                        yield from item._modules()
+
+    def train(self, mode: bool = True) -> Module:
+        """Set self and every submodule to training mode (or eval mode if mode=False)."""
+        self.training = mode
+        for m in self._modules():
+            m.training = mode
+        return self
+
+    def eval(self) -> Module:
+        """Set self and every submodule to eval mode. Equivalent to train(False)."""
+        return self.train(False)

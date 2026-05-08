@@ -36,13 +36,15 @@ def _download(name: str) -> Path:
     return target
 
 
-def _read_idx_images(path: Path) -> NDArray[np.float64]:
+def _read_idx_images(path: Path, flatten: bool) -> NDArray[np.float64]:
     with gzip.open(path, "rb") as f:
         magic, n, rows, cols = struct.unpack(">IIII", f.read(16))
         if magic != 2051:
             raise RuntimeError(f"bad IDX image magic: {magic}")
         data = np.frombuffer(f.read(n * rows * cols), dtype=np.uint8)
-    return data.reshape(n, rows * cols).astype(np.float64) / 255.0
+    if flatten:
+        return data.reshape(n, rows * cols).astype(np.float64) / 255.0
+    return data.reshape(n, 1, rows, cols).astype(np.float64) / 255.0
 
 
 def _read_idx_labels(path: Path) -> NDArray[np.int64]:
@@ -54,11 +56,13 @@ def _read_idx_labels(path: Path) -> NDArray[np.int64]:
     return data.astype(np.int64)
 
 
-def load_mnist(split: str) -> tuple[NDArray[np.float64], NDArray[np.int64]]:
-    """Return (images, labels). images shape (n, 784), float64 in [0,1]. labels shape (n,) int64."""
+def load_mnist(
+    split: str, flatten: bool = True
+) -> tuple[NDArray[np.float64], NDArray[np.int64]]:
+    """Return (images, labels). float64 in [0,1] (flatten=True: (n,784); flatten=False: (n,1,28,28))."""
     if split not in _FILES:
         raise ValueError(f"split must be 'train' or 'test'; got {split!r}")
     img_name, lbl_name = _FILES[split]
     img_path = _download(img_name)
     lbl_path = _download(lbl_name)
-    return _read_idx_images(img_path), _read_idx_labels(lbl_path)
+    return _read_idx_images(img_path, flatten=flatten), _read_idx_labels(lbl_path)

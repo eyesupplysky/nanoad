@@ -10,6 +10,7 @@ class Sequential(Module):
     """Apply layers in order; each layer's output feeds the next."""
 
     def __init__(self, *layers: Module) -> None:
+        super().__init__()
         self.layers: list[Module] = list(layers)
 
     def forward(self, x: Tensor) -> Tensor:
